@@ -131,12 +131,18 @@ app = Flask(__name__)
 @app.route('/klasifikasi', methods=['POST'])
 def klasifikasi_penyakit():
     data = request.json
-    features = data['features']  # Pastikan data yang diperlukan sesuai dengan format yang diharapkan
+    features = data['features']
     features_text = " ".join(map(str, features))
     features_vectorized = vectorizer.transform([features_text])
     predicted_class = naive_bayes.predict(features_vectorized)
+
+    # Calculate the percentage of the predicted class in the training data
+    class_count = y_train.count(predicted_class[0])
+    total_data = len(y_train)
+    percentage = (class_count / total_data) * 100
+
     hasil_klasifikasi = predicted_class[0]
-    return jsonify({'hasil_klasifikasi': hasil_klasifikasi})
+    return jsonify({'hasil_klasifikasi': hasil_klasifikasi, 'persentase': percentage})
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,12 +1,10 @@
-import re
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.feature_extraction.text import CountVectorizer
+import matplotlib.pyplot as plt
 
-data = [
+
+data_dummy = [
     ([18, "G07", "G02", "G03", "G04"], "DBD"),
     ([51, "G01", "G04", "G02", "G09"], "DBD"),
-    ([15, "G05", "G03", "G04"], "DBD"),
+    ([15, "G05", "G03", "G03", "G04"], "DBD"),
     ([2, "G01", "G05", "G12", "G13", "G14", "G18"], "DBD"),
     ([19, "G01", "G14", "G05", "G05"], "DBD"),
     ([3, "G07", "G12"], "DBD"),
@@ -107,36 +105,28 @@ data = [
     ([59, "G06", "G15", "G21"], "Non-DBD")
 ]
 
-# Data Preprocessing
-def preprocess_text(text):
-    # Menggabungkan fitur ke dalam teks
-    return " ".join(map(str, text))
+# Memisahkan data menjadi dua kelas
+dbd_data = [(len(sample[0]), "DBD") for sample in data_dummy if sample[1] == "DBD"]
+non_dbd_data = [(len(sample[0]), "Non-DBD") for sample in data_dummy if sample[1] == "Non-DBD"]
 
-X = [preprocess_text(item[0]) for item in data]
-y = [item[1] for item in data]
+# Menghitung jumlah sampel per kelas
+dbd_counts = len(dbd_data)
+non_dbd_counts = len(non_dbd_data)
 
-# Data Cleaning
-def clean_text(text):
-    # Menghapus karakter selain huruf dan angka
-    return re.sub(r'[^a-zA-Z0-9\s]', '', text)
+# Daftar label kelas
+labels = ['DBD', 'Non-DBD']
 
-X = [clean_text(text) for text in X]
+# Jumlah sampel per kelas
+counts = [dbd_counts, non_dbd_counts]
 
-# Transformasi Data
-# Dalam kasus ini, kami menggunakan CountVectorizer untuk mengonversi teks menjadi vektor.
-vectorizer = CountVectorizer()
-X_vectorized = vectorizer.fit_transform(X)
+# Membuat bar chart
+plt.bar(labels, counts, color=['blue', 'red'])
 
-# Membagi data menjadi data latih dan data uji
-X_train, X_test, y_train, y_test = train_test_split(X_vectorized, y, test_size=0.2, random_state=42)
+# Menamai sumbu
+plt.xlabel('Kelas')
+plt.ylabel('Jumlah Sampel')
 
-# Membuat dan melatih model Naive Bayes
-naive_bayes = MultinomialNB()
-naive_bayes.fit(X_train, y_train)
+# Menampilkan plot
+plt.show()
 
-# Memprediksi kelas
-y_pred = naive_bayes.predict(X_test)
 
-# Menghitung akurasi
-accuracy = (y_pred == y_test).mean()
-print(f"Akurasi: {accuracy * 100:.2f}%")
