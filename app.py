@@ -1,148 +1,162 @@
 from flask import Flask, request, jsonify
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.feature_extraction.text import CountVectorizer
-
-# Data dummy (saya mengubah data menjadi data teks untuk keperluan contoh)
-data_dummy = [
-    ([18, "G07", "G02", "G03", "G04"], "DBD"),
-    ([51, "G01", "G04", "G02", "G09"], "DBD"),
-    ([15, "G05", "G03", "G03", "G04"], "DBD"),
-    ([2, "G01", "G05", "G12", "G13", "G14", "G18"], "DBD"),
-    ([19, "G01", "G14", "G05", "G05"], "DBD"),
-    ([3, "G07", "G12"], "DBD"),
-    ([5, "G05", "G04", "G18"], "DBD"),
-    ([24, "G17", "G07", "G07", "G05", "G08", "G08"], "DBD"),
-    ([27, "G17", "G14", "G06", "G05", "G06", "G10", "G10"], "DBD"),
-    ([13, "G05", "G13", "G02", "G02", "G13", "G16", "G16", "G13", "G09", "G06", "G06"], "DBD"),
-    ([13, "G05", "G14", "G13", "G13", "G13", "G13", "G13", "G11"], "DBD"),
-    ([5, "G05", "G05", "G07", "G03", "G03", "G13"], "DBD"),
-    ([8, "G07", "G17"], "DBD"),
-    ([8, "G05", "G07", "G14", "G11", "G13", "G13"], "DBD"),
-    ([53, "G07", "G02", "G03"], "DBD"),
-    ([89, "G04", "G08", "G15", "G01", "G13", "G07", "G07", "G04", "G13", "G17"], "DBD"),
-    ([1, "G09", "G03", "G03", "G01", "G01", "G13", "G11"], "DBD"),
-    ([58, "G17", "G17", "G17", "G13", "G13", "G07", "G11", "G17"], "DBD"),
-    ([46, "G08", "G18", "G07"], "DBD"),
-    ([5, "G01", "G08", "G08"], "DBD"),
-    ([12, "G07", "G02", "G03"], "DBD"),
-    ([10, "G05", "G14", "G02", "G13"], "DBD"),
-    ([22, "G05", "G05"], "DBD"),
-    ([2, "G05", "G06", "G04"], "DBD"),
-    ([21, "G05", "G02", "G09", "G09"], "DBD"),
-    ([14, "G05", "G07", "G11"], "DBD"),
-    ([6, "G07", "G08", "G09", "G03"], "DBD"),
-    ([7, "G05", "G06", "G09"], "DBD"),
-    ([42, "G05", "G03", "G03", "G04"], "DBD"),
-    ([13, "G05", "G09", "G04", "G04"], "DBD"),
-    ([20, "G17", "G13", "G03", "G04"], "DBD"),
-    ([3, "G05", "G13", "G02"], "DBD"),
-    ([4, "G05", "G08", "G03", "G09"], "DBD"),
-    ([12, "G05", "G12", "G09", "G03"], "DBD"),
-    ([13, "G05", "G07", "G13", "G02", "G02"], "DBD"),
-    ([2, "G12", "G10"], "DBD"),
-    ([35, "G05", "G05"], "DBD"),
-    ([92, "G18", "G13", "G14", "G09"], "DBD"),
-    ([32, "G03", "G10", "G14", "G05"], "DBD"),
-    ([6, "G05", "G17", "G13"], "DBD"),
-    ([17, "G05", "G05", "G09", "G15", "G02"], "DBD"),
-    ([14, "G05", "G09", "G02", "G03", "G08", "G08"], "DBD"),
-    ([3, "G05", "G02", "G03"], "DBD"),
-    ([12, "G05", "G02", "G03", "G14"], "DBD"),
-    ([6, "G05", "G07"], "DBD"),
-    ([8, "G05", "G02", "G08"], "DBD"),
-    ([60, "G05", "G05", "G04", "G03"], "DBD"),
-    ([14, "G05", "G02", "G02"], "DBD"),
-    ([46, "G05", "G01"], "DBD"),
-    ([35, "G05", "G07"], "DBD"),
-    ([16, "G05", "G17", "G13", "G14"], "DBD"),
-    ([9, "G05", "G14", "G10"], "DBD"),
-    ([7, "G05", "G13", "G15", "G09"], "DBD"),
-    ([18, "G12", "G05", "G02"], "DBD"),
-    ([0, "G05", "G05", "G03", "G09"], "DBD"),
-    ([23, "G16", "G05", "G14", "G17"], "DBD"),
-    ([12, "G05", "G13", "G13", "G18", "G09", "G09"], "DBD"),
-    ([16, "G05", "G13", "G09"], "DBD"),
-    ([11, "G05", "G09", "G02", "G09"], "DBD"),
-    ([10, "G05", "G04", "G13"], "DBD"),
-    ([8, "G05", "G05"], "DBD"),
-    ([9, "G05", "G13"], "DBD"),
-    ([5, "G05", "G13", "G13", "G14"], "DBD"),
-    ([10, "G05", "G02", "G03", "G04"], "DBD"),
-    ([7, "G05", "G04"], "DBD"),
-    ([23, "G05", "G09"], "DBD"),
-    ([71, "G05", "G02", "G14", "G13", "G17"], "DBD"),
-    ([76, "G05", "G17", "G08"], "DBD"),
-    ([22, "G05", "G17"], "DBD"),
-    ([71, "G18", "G17", "G04"], "DBD"),
-    ([39, "G05", "G05"], "DBD"),
-    ([22, "G05", "G17", "G18"], "Non-DBD"),
-    ([3, "G13", "G03", "G19"], "Non-DBD"),
-    ([5, "G07", "G14", "G08", "G19"], "Non-DBD"),
-    ([10, "G14", "G04", "G04", "G19"], "Non-DBD"),
-    ([14, "G07", "G13", "G02", "G02", "G19"], "Non-DBD"),
-    ([20, "G17", "G13", "G03", "G04", "G18"], "Non-DBD"),
-    ([3, "G05", "G13", "G02", "G20"], "Non-DBD"),
-    ([4, "G05", "G08", "G03", "G09", "G19"], "Non-DBD"),
-    ([12, "G05", "G12", "G09", "G03", "G20"], "Non-DBD"),
-    ([13, "G05", "G07", "G13", "G02", "G02", "G19"], "Non-DBD"),
-    ([9, "G05", "G13", "G21"], "Non-DBD"),
-    ([10, "G05", "G02", "G03", "G04", "G19"], "Non-DBD"),
-    ([7, "G05", "G04", "G20"], "Non-DBD"),
-    ([23, "G05", "G09", "G20"], "Non-DBD"),
-    ([22, "G05", "G17", "G18", "G21"], "Non-DBD"),
-    ([71, "G18", "G17", "G04", "G20"], "Non-DBD"),
-    ([20, "G04", "G08", "G18", "G19"], "Non-DBD"),
-    ([23, "G03", "G09", "G19", "G20"], "Non-DBD"),
-    ([26, "G05", "G08", "G19", "G21"], "Non-DBD"),
-    ([29, "G05", "G09", "G16", "G20"], "Non-DBD"),
-    ([32, "G05", "G14", "G20"], "Non-DBD"),
-    ([35, "G06", "G09", "G15", "G19"], "Non-DBD"),
-    ([38, "G04", "G14", "G16", "G19"], "Non-DBD"),
-    ([41, "G07", "G15", "G20"], "Non-DBD"),
-    ([44, "G08", "G21"], "Non-DBD"),
-    ([47, "G09", "G18", "G19"], "Non-DBD"),
-    ([50, "G11", "G19"], "Non-DBD"),
-    ([53, "G13", "G20"], "Non-DBD"),
-    ([56, "G15", "G21"], "Non-DBD"),
-    ([59, "G06", "G15", "G21"], "Non-DBD")
-]
-
-# Membagi data menjadi data latih dan data uji
-X = [" ".join(map(str, item[0])) for item in data_dummy]  # Menggabungkan fitur ke dalam teks
-y = [item[1] for item in data_dummy]
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
-
-# Mengubah teks menjadi vektor menggunakan CountVectorizer
-vectorizer = CountVectorizer()
-X_train_vectorized = vectorizer.fit_transform(X_train)
-X_test_vectorized = vectorizer.transform(X_test)
-
-# Membuat dan melatih model Naive Bayes
-naive_bayes = MultinomialNB()
-naive_bayes.fit(X_train_vectorized, y_train)
-
-# Memprediksi kelas
-y_pred = naive_bayes.predict(X_test_vectorized)
+from sklearn.metrics import accuracy_score, classification_report
+import pandas as pd
 
 app = Flask(__name__)
 
+
+# Mengonversi data ke dalam format yang dapat digunakan oleh model
+data = [
+     [4, 10, 50, 3, 'Lolos'],
+    [5, 7, 40, 5, 'Lolos'],
+    [5, 5, 37, 5, 'Lolos'],
+    [4, 5, 40, 4, 'Lolos'],
+    [4, 5, 40, 4, 'Lolos'],
+    [3, 6, 37, 5, 'Lolos'],
+    [3, 5, 45, 4, 'Lolos'],
+    [4, 7, 45, 4, 'Lolos'],
+    [3, 6, 50, 5, 'Lolos'],
+    [4, 10, 50, 3, 'Lolos'],
+    [5, 7, 40, 5, 'Lolos'],
+    [3, 6, 37, 5, 'Lolos'],
+    [2, 2, 20, 3, 'Tidak'],
+    [2, 0, 14, 1, 'Tidak'],
+    [3, 1, 30, 2, 'Tidak'],
+    [1, 0, 23, 2, 'Tidak'],
+    [3, 0, 11, 1, 'Tidak'],
+    [3, 1, 19, 3, 'Tidak'],
+    [3, 1, 21, 3, 'Tidak'],
+    [5, 6, 37, 5, 'Lolos'],
+    [3, 1, 25, 3, 'Tidak'],
+    [2, 0, 17, 3, 'Tidak'],
+    [2, 0, 20, 2, 'Tidak'],
+    [2, 1, 17, 4, 'Tidak'],
+    [1, 1, 9, 1, 'Tidak'],
+    [1, 0, 14, 1, 'Tidak'],
+    [2, 2, 8, 3, 'Tidak'],
+    [3, 0, 24, 3, 'Tidak'],
+    [3, 2, 21, 4, 'Tidak'],
+    [4, 2, 40, 1, 'Tidak'],
+    [3, 2, 32, 4, 'Tidak'],
+    [3, 3, 19, 3, 'Tidak'],
+    [4, 0, 21, 4, 'Tidak'],
+    [2, 1, 17, 4, 'Tidak'],
+    [3, 6, 50, 5, 'Lolos'],
+    [2, 4, 32, 2, 'Tidak'],
+    [2, 0, 8, 3, 'Tidak'],
+    [3, 0, 24, 3, 'Tidak'],
+    [3, 1, 21, 3, 'Tidak'],
+    [4, 5, 40, 4, 'Lolos'],
+    [2, 2, 23, 3, 'Tidak'],
+    [3, 1, 19, 3, 'Tidak'],
+    [4, 0, 12, 2, 'Tidak'],
+    [2, 0, 17, 4, 'Tidak'],
+    [2, 2, 23, 4, 'Tidak'],
+    [2, 0, 14, 2, 'Tidak'],
+    [2, 0, 10, 3, 'Tidak'],
+    [4, 5, 40, 4, 'Lolos'],
+    [4, 1, 27, 4, 'Tidak'],
+    [3, 3, 20, 3, 'Tidak'],
+    [4, 0, 18, 4, 'Tidak'],
+    [2, 1, 17, 3, 'Tidak'],
+    [3, 6, 25, 5, 'Tidak'],
+    [2, 4, 32, 2, 'Tidak'],
+    [2, 0, 13, 3, 'Tidak'],
+    [2, 0, 20, 3, 'Tidak'],
+    [3, 5, 45, 4, 'Lolos'],
+    [4, 1, 27, 4, 'Tidak'],
+    [3, 0, 23, 4, 'Tidak'],
+    [3, 0, 27, 4, 'Tidak'],
+    [3, 1, 37, 3, 'Tidak'],
+    [3, 2, 25, 4, 'Tidak'],
+    [2, 0, 21, 2, 'Tidak'],
+    [4, 0, 28, 3, 'Tidak'],
+    [2, 1, 41, 3, 'Tidak'],
+    [3, 1, 37, 4, 'Tidak'],
+    [3, 0, 23, 4, 'Tidak'],
+    [2, 1, 27, 4, 'Tidak'],
+    [3, 1, 19, 2, 'Tidak'],
+    [4, 0, 27, 4, 'Tidak'],
+    [4, 7, 45, 4, 'Lolos'],
+    [3, 2, 25, 4, 'Tidak'],
+    [3, 0, 21, 3, 'Tidak'],
+    [2, 0, 28, 2, 'Tidak'],
+    [2, 2, 24, 2, 'Tidak'],
+    [3, 0, 13, 3, 'Tidak'],
+    [3, 6, 30, 4, 'Lolos'],
+    [2, 5, 25, 3, 'Lolos'],
+    [4, 9, 42, 5, 'Lolos'],
+    [3, 7, 38, 4, 'Lolos'],
+    [4, 8, 40, 5, 'Lolos'],
+    [2, 5, 28, 3, 'Lolos'],
+    [3, 6, 35, 4, 'Lolos'],
+    [4, 7, 42, 5, 'Lolos'],
+    [3, 6, 30, 4, 'Lolos'],
+    [5, 10, 50, 5, 'Lolos']
+
+]
+
+# Membuat DataFrame dari data
+columns = ['umur', 'fisik', 'prestasi', 'teknik', 'hasil']
+df = pd.DataFrame(data, columns=columns)
+
+# Memisahkan fitur dan label
+X = df.drop('hasil', axis=1)
+y = df['hasil']
+
+# Membagi data menjadi set pelatihan dan set pengujian
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Membuat model Decision Tree (C4.5)
+model = DecisionTreeClassifier()
+
+# Melatih model
+model.fit(X_train, y_train)
+
+# Menguji model
+y_pred = model.predict(X_test)
+
+# Mengevaluasi performa model
+accuracy = accuracy_score(y_test, y_pred)
+report = classification_report(y_test, y_pred)
+
 @app.route('/klasifikasi', methods=['POST'])
 def klasifikasi_penyakit():
-    data = request.json
-    features = data['features']
-    features_text = " ".join(map(str, features))
-    features_vectorized = vectorizer.transform([features_text])
-    predicted_class = naive_bayes.predict(features_vectorized)
+    try:
+        # Get features from the request JSON
+        data = request.json
+        features = data['features']
 
-    # Calculate the percentage of the predicted class in the training data
-    class_count = y_train.count(predicted_class[0])
-    total_data = len(y_train)
-    percentage = (class_count / total_data) * 100
+        print(f"Received features: {features}")
 
-    hasil_klasifikasi = predicted_class[0]
-    return jsonify({'hasil_klasifikasi': hasil_klasifikasi, 'persentase': percentage})
+        # Convert features to a DataFrame
+        features_df = pd.DataFrame([features], columns=X.columns)
 
+        print("Features DataFrame:")
+        print(features_df)
+
+        # Make a prediction using the trained Decision Tree model
+        predicted_class = model.predict(features_df)[0]
+
+        print(f"Predicted class: {predicted_class}")
+
+        # Get the probability of the predicted class
+        probability = model.predict_proba(features_df)[0]
+        success_percentage = max(probability) * 100
+
+        print(f"Prediction probabilities: {probability}")
+        print(f"Success percentage: {success_percentage}%")
+
+        # You can add more information or processing here if needed
+
+        return jsonify({'hasil_klasifikasi': predicted_class, 'persentase': success_percentage})
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({'error': str(e)})
+
+# Run the Flask app
 if __name__ == '__main__':
     app.run(debug=True)
